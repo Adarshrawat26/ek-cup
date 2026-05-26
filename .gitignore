@@ -5,3 +5,17 @@ node_modules
 dist
 coverage
 *.log
+
+# Local database — never commit
+prisma/dev.db
+prisma/dev.db-journal
+prisma/*.db
+
+# Uploaded avatars — served from disk in dev, R2 in prod
+public/avatars/
+
+# Claude Code session files
+.claude/
+
+# Build artifacts
+tsconfig.tsbuildinfo
