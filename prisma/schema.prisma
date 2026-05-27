@@ -167,3 +167,17 @@ model VerificationToken {
 
   @@unique([identifier, token])
 }
+
+// ── Platform config ───────────────────────────────────────────────────────────
+// Key-value store for admin-controlled settings.
+// Changes take effect on the next request — no redeploy needed.
+//
+// Keys in use:
+//   platform_fee_percent  — integer 0-100 (default: 0)
+//   maintenance_mode      — "true" | "false"
+model PlatformConfig {
+  key       String   @id          // e.g. "platform_fee_percent"
+  value     String                // always stored as string, parsed at read time
+  updatedAt DateTime @updatedAt
+  updatedBy String?               // admin email who last changed it
+}

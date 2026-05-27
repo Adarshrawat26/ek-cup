@@ -15,6 +15,7 @@ import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { sendCreatorEmailNotification } from '@/lib/notifications';
 import { checkRateLimit, getClientIp, apiRes } from '@/lib/api-helpers';
+import { creatorNetAmountAsync } from '@/lib/platform-config';
 
 // Razorpay sends webhook payloads — we must read the raw body for HMAC verification
 export async function POST(req: Request) {
@@ -93,20 +94,23 @@ async function handlePaymentCaptured(event: Record<string, unknown>) {
       data: { razorpayPaymentId: paymentId, status: 'paid' },
     });
 
+    // Platform fee — percentage set in admin panel, cached 60s
+    const netAmount = await creatorNetAmountAsync(tx.amount);
+
     // Create support record (webhook doesn't have supporter name/message — use defaults)
     await prisma.support.create({
       data: {
         creatorId: tx.creatorId,
         supporterName: 'A supporter',
         message: null,
-        amount: tx.amount,
+        amount: netAmount,
         cups: 1,
       },
     });
 
     const updatedCreator = await prisma.creator.update({
       where: { id: tx.creatorId },
-      data: { totalSupporters: { increment: 1 }, totalEarned: { increment: tx.amount } },
+      data: { totalSupporters: { increment: 1 }, totalEarned: { increment: netAmount } },
       include: { user: true },
     });
 

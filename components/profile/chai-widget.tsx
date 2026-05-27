@@ -233,12 +233,15 @@ export function ChaiWidget({ creator, id }: { creator: CreatorSummary; id?: stri
         <Button onClick={handleSupport} disabled={loading} className="w-full rounded-full bg-brand-500 text-white shadow-lg shadow-brand-500/20 hover:bg-brand-600">
           {loading ? (
             <span className="inline-flex items-center gap-2">
-              <Loader2 className="h-4 w-4 animate-spin" /> Creating payment
+              <Loader2 className="h-4 w-4 animate-spin" /> Creating payment…
             </span>
           ) : (
-            `Support ₹${finalAmount} — Pay via UPI`
+            `☕ Send ₹${finalAmount} chai`
           )}
         </Button>
+        <p className="text-center text-xs text-muted-foreground">
+          5% platform fee applies · UPI, cards, netbanking accepted
+        </p>
       </div>
     </div>
   );

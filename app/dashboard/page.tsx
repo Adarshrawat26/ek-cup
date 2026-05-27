@@ -106,8 +106,8 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={<Banknote className="h-5 w-5" />} label="This month" value={formatRupees(monthEarned)} subtext={`${monthSupports.length} payments`} />
-        <StatCard icon={<Heart className="h-5 w-5" />} label="Lifetime earned" value={formatRupees(creator.totalEarned)} subtext={`${creator.totalSupporters} supporters`} />
+        <StatCard icon={<Banknote className="h-5 w-5" />} label="This month" value={formatRupees(monthEarned)} subtext={`${monthSupports.length} payments · after 5% fee`} />
+        <StatCard icon={<Heart className="h-5 w-5" />} label="Lifetime earned" value={formatRupees(creator.totalEarned)} subtext={`${creator.totalSupporters} supporters · after 5% fee`} />
         <StatCard icon={<Sparkles className="h-5 w-5" />} label="Memberships" value={String(creator.memberships.length)} subtext="Active tiers" />
         <StatCard icon={<MessageSquareText className="h-5 w-5" />} label="Posts & shop" value={String(creator.posts.length + creator.shopItems.length)} subtext="Published items" />
       </div>

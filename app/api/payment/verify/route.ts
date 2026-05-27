@@ -3,6 +3,7 @@ import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { sendCreatorEmailNotification } from '@/lib/notifications';
 import { checkRateLimit, getClientIp, validateStr, apiRes } from '@/lib/api-helpers';
+import { creatorNetAmountAsync } from '@/lib/platform-config';
 
 type VerifyBody = {
   razorpay_payment_id?: string;
@@ -72,19 +73,22 @@ export async function POST(req: Request) {
   const safeMessage = validateStr(message ?? '', 0, 500) || null;
   const safeCups = typeof cups === 'number' && cups > 0 && cups <= 10 ? Math.floor(cups) : 1;
 
+  // Platform fee — percentage set in admin panel, cached 60s
+  const netAmount = await creatorNetAmountAsync(tx.amount);
+
   await prisma.support.create({
     data: {
       creatorId: tx.creatorId,
       supporterName: safeName,
       message: safeMessage,
-      amount: tx.amount,
+      amount: netAmount,   // store net so display is always accurate
       cups: safeCups,
     },
   });
 
   const updatedCreator = await prisma.creator.update({
     where: { id: tx.creatorId },
-    data: { totalSupporters: { increment: 1 }, totalEarned: { increment: tx.amount } },
+    data: { totalSupporters: { increment: 1 }, totalEarned: { increment: netAmount } },
     include: { user: true },
   });
 
