@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { $Enums } from '@prisma/client';
 import { razorpay } from '@/lib/razorpay';
 import { checkRateLimit, getClientIp, validateNum, apiRes } from '@/lib/api-helpers';
 
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
     }
 
     await prisma.transaction.create({
-      data: { creatorId: creator.id, razorpayOrderId: order.id, amount: amountPaise, status: 'pending' },
+      data: { creatorId: creator.id, razorpayOrderId: order.id, amount: amountPaise, status: $Enums.TransactionStatus.pending },
     });
 
     return NextResponse.json({

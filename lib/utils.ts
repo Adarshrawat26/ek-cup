@@ -10,27 +10,14 @@ export function formatRupees(amountPaise: number): string {
 }
 
 // ─── Platform fee ─────────────────────────────────────────────────────────────
-// Ek Cup takes a 5% platform fee on every successful payment.
-// All amounts are stored in paise (1 INR = 100 paise).
-
-export const PLATFORM_FEE_PERCENT = 5;
-
-/**
- * Returns how much the creator receives after the platform fee.
- * Uses Math.floor so we never overpay the creator.
- * e.g. ₹100 gross → ₹95 net, ₹5 platform fee
- */
-export function creatorNetAmount(grossPaise: number): number {
-  return Math.floor(grossPaise * (1 - PLATFORM_FEE_PERCENT / 100));
-}
-
-/**
- * Returns the platform fee amount in paise.
- * e.g. ₹100 gross → ₹5 fee
- */
-export function platformFeeAmount(grossPaise: number): number {
-  return grossPaise - creatorNetAmount(grossPaise);
-}
+// The platform fee percentage is stored in PlatformConfig (key: "platform_fee_percent")
+// and is admin-controlled. Use lib/platform-config.ts for any fee calculation:
+//
+//   getPlatformFeePercent()          → current fee % (cached, async)
+//   creatorNetAmountAsync(paise)     → net paise after fee (async)
+//   applyFee(paise, feePercent)      → { net, fee } when percent is already known
+//
+// Do NOT use hardcoded fee constants here — they will silently diverge from the DB.
 
 export function parsePerks(perks: string | string[]): string[] {
   if (Array.isArray(perks)) return perks.filter(Boolean);

@@ -10,12 +10,16 @@ export type PayoutData = {
 export type CreatorSummary = {
   username: string;
   name: string;
-  handle: string;
+  /** @deprecated Use `username` — compute the display URL as `ekcup.in/${username}` at the call site. */
+  handle?: string;
   bio: string;
   avatarUrl?: string;
+  /** Tags stored as a comma-joined string in the DB, split to an array here. */
   category: string[];
   location: string;
+  /** Pre-formatted: e.g. "₹2,400" — gross lifetime earnings. */
   earnings: string;
+  /** Pre-formatted: e.g. "5 supporters". */
   supportersCount: string;
   socialLinks: {
     instagram?: string;
@@ -38,7 +42,7 @@ export type CreatorSummary = {
     id: string;
     title: string;
     body: string;
-    audience: string;
+    audience: 'public' | 'members';
     createdAt: string;
   }[];
   shopItems?: {

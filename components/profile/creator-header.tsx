@@ -27,7 +27,7 @@ export function CreatorHeader({ creator }: { creator: CreatorSummary }) {
               Creator profile
             </div>
             <h1 className="text-2xl font-semibold tracking-tight sm:text-3xl">{creator.name}</h1>
-            <p className="text-sm text-muted-foreground">{creator.handle}</p>
+            <p className="text-sm text-muted-foreground">ekcup.in/{creator.username}</p>
           </div>
 
           <p className="max-w-2xl text-sm leading-7 text-muted-foreground sm:text-base">{creator.bio}</p>

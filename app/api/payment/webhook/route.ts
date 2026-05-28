@@ -13,6 +13,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
+import { $Enums } from '@prisma/client';
 import { sendCreatorEmailNotification } from '@/lib/notifications';
 import { checkRateLimit, getClientIp, apiRes } from '@/lib/api-helpers';
 import { creatorNetAmountAsync } from '@/lib/platform-config';
@@ -93,7 +94,7 @@ async function handlePaymentCaptured(event: Record<string, unknown>) {
 
     await prisma.transaction.update({
       where: { id: tx.id },
-      data: { razorpayPaymentId: paymentId, status: 'paid' },
+      data: { razorpayPaymentId: paymentId, status: $Enums.TransactionStatus.paid },
     });
 
     // Platform fee — percentage set in admin panel, cached 60s
@@ -138,8 +139,8 @@ async function handlePaymentFailed(event: Record<string, unknown>) {
     if (!orderId) return;
 
     await prisma.transaction.updateMany({
-      where: { razorpayOrderId: orderId, status: 'pending' },
-      data: { status: 'failed' },
+      where: { razorpayOrderId: orderId, status: $Enums.TransactionStatus.pending },
+      data: { status: $Enums.TransactionStatus.failed },
     });
   } catch (err) {
     console.error('[webhook] handlePaymentFailed error:', err);

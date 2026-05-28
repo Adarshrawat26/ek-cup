@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { requireAdmin } from '@/lib/admin-auth';
+import { checkRateLimit, getClientIp, apiRes } from '@/lib/api-helpers';
 
-export async function GET() {
+export async function GET(req: Request) {
+  const ip = getClientIp(req);
+  if (!await checkRateLimit(`admin-stats:${ip}`, 30, 60_000)) return apiRes.rateLimited();
+
   const admin = await requireAdmin();
-  if (!admin) return NextResponse.json({ error: 'Forbidden' }, { status: 403 });
+  if (!admin) return apiRes.forbidden();
 
   const [
     totalCreators,

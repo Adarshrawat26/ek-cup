@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { checkRateLimit, getClientIp } from '@/lib/api-helpers';
+import { checkRateLimit, getClientIp, apiRes } from '@/lib/api-helpers';
 
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
@@ -13,11 +13,9 @@ export async function GET(
   req: Request,
   { params }: { params: Promise<{ username: string }> }
 ) {
-  // M-2: Rate limit — prevents bulk-scraping supporter PII (names, messages)
   const ip = getClientIp(req);
-  if (!await checkRateLimit(`supporters:${ip}`, 30, 60_000)) {
-    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
-  }
+  // Rate limit: prevents bulk-scraping supporter PII (names, messages)
+  if (!await checkRateLimit(`supporters:${ip}`, 30, 60_000)) return apiRes.rateLimited();
 
   const { username } = await params;
 
@@ -27,7 +25,7 @@ export async function GET(
   const cursor = url.searchParams.get('cursor') ?? undefined;
 
   const creator = await prisma.creator.findUnique({ where: { username }, select: { id: true } });
-  if (!creator) return NextResponse.json({ error: 'Not found' }, { status: 404 });
+  if (!creator) return apiRes.notFound();
 
   const supports = await prisma.support.findMany({
     where: { creatorId: creator.id },

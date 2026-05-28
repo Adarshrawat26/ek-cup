@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import { prisma } from '@/lib/prisma';
+import { $Enums } from '@prisma/client';
 import { sendCreatorEmailNotification } from '@/lib/notifications';
 import { checkRateLimit, getClientIp, validateStr, apiRes } from '@/lib/api-helpers';
 import { creatorNetAmountAsync } from '@/lib/platform-config';
@@ -58,14 +59,14 @@ export async function POST(req: Request) {
   if (!tx) return apiRes.notFound('Transaction not found.');
 
   // Idempotency: if already paid, return success without double-counting
-  if (tx.status === 'paid') {
+  if (tx.status === $Enums.TransactionStatus.paid) {
     return NextResponse.json({ ok: true, alreadyProcessed: true });
   }
 
   const paymentId = razorpay_payment_id ?? `demo_${Date.now()}`;
   await prisma.transaction.update({
     where: { id: tx.id },
-    data: { razorpayPaymentId: paymentId, status: 'paid' },
+    data: { razorpayPaymentId: paymentId, status: $Enums.TransactionStatus.paid },
   });
 
   // Sanitise supporter inputs
