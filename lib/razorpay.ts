@@ -22,6 +22,6 @@ export async function createRazorpayOrder(amountInRupees: number, receipt: strin
     amount: amountInRupees * 100,
     currency: 'INR',
     receipt,
-    payment_capture: 1
+    payment_capture: true
   });
 }

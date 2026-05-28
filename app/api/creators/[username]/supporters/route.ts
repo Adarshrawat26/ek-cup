@@ -1,23 +1,25 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { checkRateLimit, getClientIp } from '@/lib/api-helpers';
 
 const DEFAULT_LIMIT = 10;
 const MAX_LIMIT = 50;
 
 /**
  * GET /api/creators/:username/supporters
- *
  * Cursor-based pagination — safe for large supporter lists.
- *
- * Query params:
- *   limit  - number of items (default 10, max 50)
- *   cursor - id of the last item from the previous page (omit for first page)
- *
- * Response:
- *   { supports: [...], nextCursor: string | null, hasMore: boolean }
  */
-export async function GET(req: Request, { params }: { params: { username: string } }) {
-  const { username } = params;
+export async function GET(
+  req: Request,
+  { params }: { params: Promise<{ username: string }> }
+) {
+  // M-2: Rate limit — prevents bulk-scraping supporter PII (names, messages)
+  const ip = getClientIp(req);
+  if (!await checkRateLimit(`supporters:${ip}`, 30, 60_000)) {
+    return NextResponse.json({ error: 'Too many requests' }, { status: 429 });
+  }
+
+  const { username } = await params;
 
   const url = new URL(req.url);
   const rawLimit = parseInt(url.searchParams.get('limit') ?? String(DEFAULT_LIMIT), 10);
@@ -27,21 +29,14 @@ export async function GET(req: Request, { params }: { params: { username: string
   const creator = await prisma.creator.findUnique({ where: { username }, select: { id: true } });
   if (!creator) return NextResponse.json({ error: 'Not found' }, { status: 404 });
 
-  // Fetch one extra record to determine if there's a next page
   const supports = await prisma.support.findMany({
     where: { creatorId: creator.id },
     orderBy: { createdAt: 'desc' },
     take: limit + 1,
-    ...(cursor
-      ? { cursor: { id: cursor }, skip: 1 } // skip the cursor item itself
-      : {}),
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
     select: {
-      id: true,
-      supporterName: true,
-      message: true,
-      amount: true,
-      cups: true,
-      createdAt: true,
+      id: true, supporterName: true, message: true,
+      amount: true, cups: true, createdAt: true,
     },
   });
 

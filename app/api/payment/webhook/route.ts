@@ -24,9 +24,11 @@ export async function POST(req: Request) {
 
   const webhookSecret = process.env.RAZORPAY_WEBHOOK_SECRET;
   if (!webhookSecret) {
-    // Not configured — log and return 200 so Razorpay doesn't retry infinitely
-    console.warn('[webhook] RAZORPAY_WEBHOOK_SECRET is not set; skipping verification.');
-    return NextResponse.json({ ok: true });
+    // SECURITY: Never accept unverified webhooks — a missing secret means
+    // any attacker could POST fake payment.captured events to credit creators.
+    // Return 500 so Razorpay retries once the secret is properly configured.
+    console.error('[webhook] RAZORPAY_WEBHOOK_SECRET is not configured — rejecting all webhooks.');
+    return NextResponse.json({ error: 'Webhook not configured' }, { status: 500 });
   }
 
   const rawBody = await req.text();

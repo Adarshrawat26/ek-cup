@@ -41,7 +41,7 @@ const cups = [
   { count: 5, amount: 145 }
 ];
 
-export function ChaiWidget({ creator, id }: { creator: CreatorSummary; id?: string }) {
+export function ChaiWidget({ creator, id, feePercent = 0 }: { creator: CreatorSummary; id?: string; feePercent?: number }) {
   const [selectedAmount, setSelectedAmount] = useState(29);
   const [customAmount, setCustomAmount] = useState('');
   const [message, setMessage] = useState('');
@@ -102,9 +102,6 @@ export function ChaiWidget({ creator, id }: { creator: CreatorSummary; id?: stri
             confetti({ particleCount: 120, spread: 72, origin: { y: 0.7 } });
             setSuccess(true);
             toast({ title: 'Demo support sent', description: `Demo: Thanks for buying ${creator.name} a chai.` });
-            try {
-              await fetch(`/api/creators/${creator.username}/supporters`);
-            } catch (e) {}
           } else {
             toast({ title: 'Demo verification failed', description: 'Could not complete demo support.' });
           }
@@ -143,12 +140,6 @@ export function ChaiWidget({ creator, id }: { creator: CreatorSummary; id?: stri
             confetti({ particleCount: 120, spread: 72, origin: { y: 0.7 } });
             setSuccess(true);
             toast({ title: 'Support sent successfully', description: `Thanks for buying ${creator.name} a chai.` });
-            // optimistic refresh supporters via SWR
-            try {
-              // mutate supporters list
-              const res = await fetch(`/api/creators/${creator.username}/supporters`);
-              // nothing else — SWR in client will refetch
-            } catch (e) {}
           } else {
             toast({ title: 'Payment verification failed', description: 'We could not confirm your payment.' });
           }
@@ -240,7 +231,7 @@ export function ChaiWidget({ creator, id }: { creator: CreatorSummary; id?: stri
           )}
         </Button>
         <p className="text-center text-xs text-muted-foreground">
-          5% platform fee applies · UPI, cards, netbanking accepted
+          {feePercent > 0 ? `${feePercent}% platform fee applies · ` : ''}UPI, cards, netbanking accepted
         </p>
       </div>
     </div>

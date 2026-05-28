@@ -13,11 +13,10 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
 import { PutObjectCommand, S3Client } from '@aws-sdk/client-s3';
 import fs from 'fs';
 import path from 'path';
-import { authOptions } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { checkRateLimit, getClientIp, apiRes } from '@/lib/api-helpers';
 
 const MAX_FILE_SIZE_BYTES = 2 * 1024 * 1024; // 2 MB
@@ -44,7 +43,7 @@ export async function POST(req: Request) {
   const ip = getClientIp(req);
   if (!await checkRateLimit(`upload-avatar:${ip}`, 10, 60_000)) return apiRes.rateLimited();
 
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   if (!session?.user?.id && process.env.NODE_ENV === 'production') {
     return apiRes.unauthorized();
   }

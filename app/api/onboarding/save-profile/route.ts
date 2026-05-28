@@ -1,8 +1,7 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
 import { prisma } from '@/lib/prisma';
-import { authOptions } from '@/lib/auth';
-import { checkRateLimit, getClientIp, validateStr, validateUsername, apiRes } from '@/lib/api-helpers';
+import { getSession } from '@/lib/auth';
+import { checkRateLimit, getClientIp, validateStr, validateUrl, validateUsername, apiRes } from '@/lib/api-helpers';
 
 type SaveProfileBody = {
   name?: string;
@@ -11,7 +10,7 @@ type SaveProfileBody = {
   avatarUrl?: string;
   tags?: string[];
   socialLink?: string;
-  userId?: string;
+  // userId is intentionally not accepted — always sourced from the server session
 };
 
 export async function POST(req: Request) {
@@ -20,7 +19,7 @@ export async function POST(req: Request) {
 
   try {
     const body: SaveProfileBody = await req.json();
-    const { name, username, bio, avatarUrl, tags, socialLink, userId } = body;
+    const { name, username, bio, avatarUrl, tags, socialLink } = body;
 
     const validUsername = validateUsername(username);
     if (!validUsername) {
@@ -30,33 +29,36 @@ export async function POST(req: Request) {
     const validName = validateStr(name ?? validUsername, 1, 100);
     if (!validName) return apiRes.badRequest('Name must be 1–100 characters.');
 
-    const session = await getServerSession(authOptions);
+    // SECURITY (M-5): Never trust userId from the client body.
+    // Always source identity from the server session exclusively.
+    const session = await getSession();
 
-    // In production, require a session. In dev, allow demo flow.
     if (!session?.user?.id && process.env.NODE_ENV === 'production') {
       return apiRes.unauthorized();
     }
 
-    // If authenticated, the userId in the body must match the session
-    if (session?.user?.id && userId && session.user.id !== userId) {
-      return apiRes.forbidden();
-    }
+    const effectiveUserId = session?.user?.id ?? undefined;
 
-    const effectiveUserId = session?.user?.id ?? userId;
+    // SECURITY (H-4): Validate avatarUrl — prevents SSRF via image optimisation
+    // and stored XSS. Uses the same validateUrl helper used everywhere else.
+    const safeAvatarUrl = avatarUrl ? validateUrl(avatarUrl) : null;
+    if (avatarUrl && !safeAvatarUrl) {
+      return apiRes.badRequest('avatarUrl must be a valid https:// URL.');
+    }
 
     const profileData = {
       name: validName,
       username: validUsername,
       bio: validateStr(bio ?? '', 0, 500) ?? null,
-      avatarUrl: avatarUrl || null,
+      avatarUrl: safeAvatarUrl,
       tags: Array.isArray(tags) ? tags.map((t) => t.trim()).filter(Boolean).join(',') : '',
-      twitterUrl: socialLink || null,
+      twitterUrl: socialLink ? validateUrl(socialLink) : null,
     };
 
     const creator = await prisma.creator.upsert({
       where: { username: validUsername },
       update: { ...profileData, updatedAt: new Date() },
-      create: { ...profileData, handle: validUsername, userId: effectiveUserId ?? undefined },
+      create: { ...profileData, userId: effectiveUserId },
     });
 
     return NextResponse.json({ success: true, creatorId: creator.id });

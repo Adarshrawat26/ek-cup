@@ -9,11 +9,12 @@ import {
   apiRes,
 } from '@/lib/api-helpers';
 
-type Params = { params: { username: string } };
+type Params = { params: Promise<{ username: string }> };
 
 export async function GET(_req: Request, { params }: Params) {
+  const { username } = await params;
   const creator = await prisma.creator.findUnique({
-    where: { username: params.username },
+    where: { username },
     include: { memberships: true },
   });
   if (!creator) return apiRes.notFound();
@@ -29,16 +30,15 @@ export async function GET(_req: Request, { params }: Params) {
 /**
  * PATCH /api/creators/[username]
  * Update mutable profile fields. Only the owner can do this.
- * Accepts: name, bio, avatarUrl, tags, instagramUrl, youtubeUrl, twitterUrl
  */
 export async function PATCH(req: Request, { params }: Params) {
   const ip = getClientIp(req);
   if (!await checkRateLimit(`creator-patch:${ip}`, 20, 60_000)) return apiRes.rateLimited();
 
-  const creator = await prisma.creator.findUnique({ where: { username: params.username } });
+  const { username } = await params;
+  const creator = await prisma.creator.findUnique({ where: { username } });
   if (!creator) return apiRes.notFound('Creator not found.');
 
-  // Auth check: must be authenticated as this creator, or demo mode in dev
   const authed = await getAuthenticatedCreator();
   if (authed) {
     if (authed.id !== creator.id) return apiRes.forbidden();
@@ -86,7 +86,7 @@ export async function PATCH(req: Request, { params }: Params) {
   if (Object.keys(updates).length === 0) return apiRes.badRequest('No valid fields to update.');
 
   const updated = await prisma.creator.update({
-    where: { username: params.username },
+    where: { username },
     data: { ...updates, updatedAt: new Date() },
   });
 

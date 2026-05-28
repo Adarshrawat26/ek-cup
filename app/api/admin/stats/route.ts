@@ -10,7 +10,8 @@ export async function GET() {
     totalCreators,
     totalSupporters,
     totalTransactions,
-    paidTransactions,
+    // H-3: aggregate avoids loading every paid transaction row into memory
+    paidAggregate,
     recentCreators,
     recentTransactions,
     feeConfig,
@@ -18,21 +19,31 @@ export async function GET() {
     prisma.creator.count(),
     prisma.support.count(),
     prisma.transaction.count(),
-    prisma.transaction.findMany({ where: { status: 'paid' }, select: { amount: true } }),
+    prisma.transaction.aggregate({
+      where: { status: 'paid' },
+      _sum: { amount: true },
+      _count: true,
+    }),
     prisma.creator.findMany({
       orderBy: { createdAt: 'desc' },
       take: 10,
-      select: { id: true, name: true, username: true, totalEarned: true, totalSupporters: true, createdAt: true, onboardingComplete: true },
+      select: {
+        id: true, name: true, username: true, totalEarned: true,
+        totalSupporters: true, createdAt: true, onboardingComplete: true,
+      },
     }),
     prisma.transaction.findMany({
       orderBy: { createdAt: 'desc' },
       take: 20,
-      select: { id: true, razorpayOrderId: true, amount: true, status: true, createdAt: true, creator: { select: { name: true, username: true } } },
+      select: {
+        id: true, razorpayOrderId: true, amount: true, status: true, createdAt: true,
+        creator: { select: { name: true, username: true } },
+      },
     }),
     prisma.platformConfig.findUnique({ where: { key: 'platform_fee_percent' } }),
   ]);
 
-  const grossRevenue = paidTransactions.reduce((s, t) => s + t.amount, 0);
+  const grossRevenue = paidAggregate._sum.amount ?? 0;
   const feePercent = parseInt(feeConfig?.value ?? '0', 10);
   const platformEarnings = Math.floor(grossRevenue * (feePercent / 100));
 

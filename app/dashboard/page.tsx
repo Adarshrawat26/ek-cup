@@ -1,17 +1,17 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { getServerSession } from 'next-auth/next';
 import { ArrowUpRight, Banknote, Heart, MessageSquareText, Sparkles } from 'lucide-react';
-import { authOptions } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { formatRupees } from '@/lib/utils';
+import { getPlatformFeePercent } from '@/lib/platform-config';
 import { Button } from '@/components/ui/button';
 import { MembershipForm } from '@/components/dashboard/membership-form';
 import { PostForm } from '@/components/dashboard/post-form';
 import { ShopItemForm } from '@/components/dashboard/shop-item-form';
 
 type DashboardProps = {
-  searchParams?: { username?: string };
+  searchParams?: Promise<{ username?: string }>;
 };
 
 const creatorInclude = {
@@ -25,7 +25,7 @@ const creatorInclude = {
 };
 
 export default async function DashboardPage({ searchParams }: DashboardProps) {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   const isDev = process.env.NODE_ENV !== 'production';
 
   // ── Auth gate ────────────────────────────────────────────────────────────
@@ -35,7 +35,8 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
     redirect('/');
   }
 
-  const username = searchParams?.username?.toLowerCase();
+  const sp = await searchParams;
+  const username = sp?.username?.toLowerCase();
 
   // ── Creator resolution ───────────────────────────────────────────────────
   // Priority:
@@ -69,7 +70,7 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
   if (!creator) notFound();
 
   // ── Stats ────────────────────────────────────────────────────────────────
-  const monthStart = new Date();
+  const [feePercent, monthStart] = [await getPlatformFeePercent(), new Date()];
   monthStart.setHours(0, 0, 0, 0);
   monthStart.setDate(1);
 
@@ -106,8 +107,8 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
 
       {/* Stats */}
       <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
-        <StatCard icon={<Banknote className="h-5 w-5" />} label="This month" value={formatRupees(monthEarned)} subtext={`${monthSupports.length} payments · after 5% fee`} />
-        <StatCard icon={<Heart className="h-5 w-5" />} label="Lifetime earned" value={formatRupees(creator.totalEarned)} subtext={`${creator.totalSupporters} supporters · after 5% fee`} />
+        <StatCard icon={<Banknote className="h-5 w-5" />} label="This month" value={formatRupees(monthEarned)} subtext={`${monthSupports.length} payments${feePercent > 0 ? ` · after ${feePercent}% fee` : ''}`} />
+        <StatCard icon={<Heart className="h-5 w-5" />} label="Lifetime earned" value={formatRupees(creator.totalEarned)} subtext={`${creator.totalSupporters} supporters${feePercent > 0 ? ` · after ${feePercent}% fee` : ''}`} />
         <StatCard icon={<Sparkles className="h-5 w-5" />} label="Memberships" value={String(creator.memberships.length)} subtext="Active tiers" />
         <StatCard icon={<MessageSquareText className="h-5 w-5" />} label="Posts & shop" value={String(creator.posts.length + creator.shopItems.length)} subtext="Published items" />
       </div>

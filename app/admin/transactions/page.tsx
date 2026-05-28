@@ -10,11 +10,11 @@ const PAGE_SIZE = 25;
 type Status = 'all' | 'paid' | 'pending' | 'failed';
 
 type Props = {
-  searchParams?: {
+  searchParams?: Promise<{
     status?: string;
     cursor?: string;
     q?: string;
-  };
+  }>;
 };
 
 const STATUS_LABELS: Record<string, { label: string; className: string }> = {
@@ -27,12 +27,13 @@ export default async function AdminTransactions({ searchParams }: Props) {
   const admin = await requireAdmin();
   if (!admin) redirect('/');
 
-  const rawStatus = searchParams?.status ?? 'all';
+  const sp = await searchParams;
+  const rawStatus = sp?.status ?? 'all';
   const status: Status = ['paid', 'pending', 'failed'].includes(rawStatus)
     ? (rawStatus as Status)
     : 'all';
-  const cursor = searchParams?.cursor;
-  const q = searchParams?.q?.trim() ?? '';
+  const cursor = sp?.cursor;
+  const q = sp?.q?.trim() ?? '';
 
   const where = {
     ...(status !== 'all' ? { status } : {}),

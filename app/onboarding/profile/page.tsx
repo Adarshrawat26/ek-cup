@@ -3,13 +3,12 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useOnboarding } from '@/lib/onboarding-context';
 import { useRouter } from 'next/navigation';
-import { useSession } from 'next-auth/react';
 
 const TAGS = ['Art','Music','Writing','Education','Tech','Comedy','Finance','Gaming','Podcast','Other'];
 
 export default function ProfileStep() {
   const { data, setData } = useOnboarding();
-  const { data: session } = useSession();
+
   const [name, setName] = useState(data.name || '');
   const [username, setUsername] = useState(data.username || '');
   const [bio, setBio] = useState(data.bio || '');
@@ -64,8 +63,8 @@ export default function ProfileStep() {
   async function onNext() {
     if (!name || !username || usernameAvailable !== true) return;
     setData({ name, username, bio, avatarUrl: avatarPreview, tags, socialLink: '' });
-    // save server-side
-    await fetch('/api/onboarding/save-profile', { method: 'POST', headers: { 'content-type':'application/json' }, body: JSON.stringify({ name, username, bio, avatarUrl: avatarPreview, tags, userId: session?.user?.id }) });
+    // save server-side — server reads identity from session, never from body
+    await fetch('/api/onboarding/save-profile', { method: 'POST', headers: { 'content-type':'application/json' }, body: JSON.stringify({ name, username, bio, avatarUrl: avatarPreview, tags }) });
     router.push('/onboarding/payout');
   }
 

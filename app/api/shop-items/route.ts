@@ -28,7 +28,6 @@ export async function POST(req: Request) {
   const parsedPrice = validateNum(price, 0, 100_000);
   if (parsedPrice === null) return apiRes.badRequest('Price must be a number between 0 and 1,00,000.');
 
-  // deliveryUrl is optional but must be valid if provided
   const safeUrl = deliveryUrl ? validateUrl(deliveryUrl) : null;
   if (deliveryUrl && !safeUrl) return apiRes.badRequest('deliveryUrl must be a valid https:// URL.');
 
@@ -36,12 +35,15 @@ export async function POST(req: Request) {
   if (access === 'unauthorized') return apiRes.unauthorized();
   if (access === 'forbidden') return apiRes.forbidden();
 
-  const creator = await prisma.creator.findUnique({ where: { id: creatorId } });
+  // L-2: reuse creator already fetched by checkOwnership — avoids N+1
+  const creator = access !== 'demo'
+    ? access
+    : await prisma.creator.findUnique({ where: { id: creatorId } });
   if (!creator) return apiRes.notFound('Creator not found.');
 
   const item = await prisma.shopItem.create({
     data: {
-      creatorId,
+      creatorId: creator.id,
       name: validName,
       description: validDesc,
       priceInPaise: Math.round(parsedPrice * 100),

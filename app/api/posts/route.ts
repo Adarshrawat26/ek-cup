@@ -27,12 +27,15 @@ export async function POST(req: Request) {
   if (access === 'unauthorized') return apiRes.unauthorized();
   if (access === 'forbidden') return apiRes.forbidden();
 
-  const creator = await prisma.creator.findUnique({ where: { id: creatorId } });
+  // L-2: reuse the creator already fetched by checkOwnership — avoids N+1
+  const creator = access !== 'demo'
+    ? access
+    : await prisma.creator.findUnique({ where: { id: creatorId } });
   if (!creator) return apiRes.notFound('Creator not found.');
 
   const post = await prisma.creatorPost.create({
     data: {
-      creatorId,
+      creatorId: creator.id,
       title: validTitle,
       body: validContent,
       audience: audience === 'members' ? 'members' : 'public',

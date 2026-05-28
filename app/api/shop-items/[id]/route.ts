@@ -10,13 +10,14 @@ import {
   apiRes,
 } from '@/lib/api-helpers';
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: Request, { params }: Params) {
   const ip = getClientIp(req);
   if (!await checkRateLimit(`shop-patch:${ip}`, 30, 60_000)) return apiRes.rateLimited();
 
-  const item = await prisma.shopItem.findUnique({ where: { id: params.id } });
+  const { id } = await params;
+  const item = await prisma.shopItem.findUnique({ where: { id } });
   if (!item) return apiRes.notFound('Shop item not found.');
 
   const access = await checkOwnership(item.creatorId);
@@ -49,7 +50,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
   if (Object.keys(updates).length === 0) return apiRes.badRequest('No valid fields to update.');
 
-  const updated = await prisma.shopItem.update({ where: { id: params.id }, data: updates });
+  const updated = await prisma.shopItem.update({ where: { id }, data: updates });
   return NextResponse.json({ item: updated });
 }
 
@@ -57,13 +58,14 @@ export async function DELETE(req: Request, { params }: Params) {
   const ip = getClientIp(req);
   if (!await checkRateLimit(`shop-delete:${ip}`, 20, 60_000)) return apiRes.rateLimited();
 
-  const item = await prisma.shopItem.findUnique({ where: { id: params.id } });
+  const { id } = await params;
+  const item = await prisma.shopItem.findUnique({ where: { id } });
   if (!item) return apiRes.notFound('Shop item not found.');
 
   const access = await checkOwnership(item.creatorId);
   if (access === 'unauthorized') return apiRes.unauthorized();
   if (access === 'forbidden') return apiRes.forbidden();
 
-  await prisma.shopItem.delete({ where: { id: params.id } });
+  await prisma.shopItem.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

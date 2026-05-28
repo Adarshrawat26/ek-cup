@@ -9,9 +9,8 @@
  */
 
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
 import type { Creator } from '@prisma/client';
-import { authOptions } from './auth';
+import { getSession } from './auth';
 import { prisma } from './prisma';
 
 // ─── Rate Limiter ─────────────────────────────────────────────────────────────
@@ -33,7 +32,7 @@ export function getClientIp(req: Request): string {
 
 /** Returns the authenticated creator or null (not logged in / no creator yet). */
 export async function getAuthenticatedCreator(): Promise<Creator | null> {
-  const session = await getServerSession(authOptions);
+  const session = await getSession();
   if (!session?.user?.id) return null;
   return prisma.creator.findFirst({ where: { userId: session.user.id } });
 }

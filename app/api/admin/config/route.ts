@@ -38,8 +38,8 @@ export async function PATCH(req: Request) {
     create: { key, value, updatedBy: admin.email },
   });
 
-  // Bust the in-memory cache so the new value takes effect immediately
-  invalidateConfigCache(key);
+  // Bust Redis + in-memory cache so new value is reflected immediately everywhere
+  await invalidateConfigCache(key);
 
   return NextResponse.json({ config: updated });
 }

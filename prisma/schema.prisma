@@ -2,6 +2,17 @@ generator client {
   provider = "prisma-client-js"
 }
 
+enum TransactionStatus {
+  pending
+  paid
+  failed
+}
+
+enum Audience {
+  public
+  members
+}
+
 // ── Database ──────────────────────────────────────────────────────────────────
 // Production: Neon PostgreSQL (free tier, Singapore region)
 //
@@ -43,7 +54,6 @@ model Creator {
   twitterUrl      String?
   totalEarned     Int          @default(0)
   totalSupporters Int          @default(0)
-  handle          String       @unique
   user            User?        @relation("CreatorOwner", fields: [userId], references: [id], onDelete: Cascade)
   supports        Support[]
   memberships     Membership[]
@@ -88,7 +98,7 @@ model Transaction {
   razorpayOrderId   String   @unique
   razorpayPaymentId String?
   amount            Int
-  status            String   @default("pending")
+  status            TransactionStatus @default(pending)
   createdAt         DateTime @default(now())
 
   @@index([creatorId, createdAt(sort: Desc)])
@@ -113,7 +123,7 @@ model CreatorPost {
   creator    Creator  @relation(fields: [creatorId], references: [id], onDelete: Cascade)
   title      String
   body       String
-  audience   String   @default("public")
+  audience   Audience @default(public)
   createdAt  DateTime @default(now())
   updatedAt  DateTime @updatedAt
 

@@ -10,13 +10,14 @@ import {
   apiRes,
 } from '@/lib/api-helpers';
 
-type Params = { params: { id: string } };
+type Params = { params: Promise<{ id: string }> };
 
 export async function PATCH(req: Request, { params }: Params) {
   const ip = getClientIp(req);
   if (!await checkRateLimit(`memberships-patch:${ip}`, 30, 60_000)) return apiRes.rateLimited();
 
-  const membership = await prisma.membership.findUnique({ where: { id: params.id } });
+  const { id } = await params;
+  const membership = await prisma.membership.findUnique({ where: { id } });
   if (!membership) return apiRes.notFound('Membership not found.');
 
   const access = await checkOwnership(membership.creatorId);
@@ -42,7 +43,7 @@ export async function PATCH(req: Request, { params }: Params) {
 
   if (Object.keys(updates).length === 0) return apiRes.badRequest('No valid fields to update.');
 
-  const updated = await prisma.membership.update({ where: { id: params.id }, data: updates });
+  const updated = await prisma.membership.update({ where: { id }, data: updates });
   return NextResponse.json({ membership: updated });
 }
 
@@ -50,13 +51,14 @@ export async function DELETE(req: Request, { params }: Params) {
   const ip = getClientIp(req);
   if (!await checkRateLimit(`memberships-delete:${ip}`, 20, 60_000)) return apiRes.rateLimited();
 
-  const membership = await prisma.membership.findUnique({ where: { id: params.id } });
+  const { id } = await params;
+  const membership = await prisma.membership.findUnique({ where: { id } });
   if (!membership) return apiRes.notFound('Membership not found.');
 
   const access = await checkOwnership(membership.creatorId);
   if (access === 'unauthorized') return apiRes.unauthorized();
   if (access === 'forbidden') return apiRes.forbidden();
 
-  await prisma.membership.delete({ where: { id: params.id } });
+  await prisma.membership.delete({ where: { id } });
   return NextResponse.json({ ok: true });
 }

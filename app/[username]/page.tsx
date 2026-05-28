@@ -7,10 +7,11 @@ import { ChaiWidget } from '@/components/profile/chai-widget';
 import { MembershipTiers } from '@/components/profile/membership-tiers';
 import { prisma } from '@/lib/prisma';
 import { parsePerks } from '@/lib/utils';
+import { getPlatformFeePercent } from '@/lib/platform-config';
 import type { CreatorSummary } from '@/lib/types';
 
 type PageProps = {
-  params: { username: string };
+  params: Promise<{ username: string }>;
 };
 
 // ─── Cached DB fetch ──────────────────────────────────────────────────────────
@@ -34,8 +35,9 @@ const getCreatorCached = unstable_cache(
 );
 
 export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
-  const { username } = params;
-  const creatorDb = await prisma.creator.findUnique({ where: { username } });
+  const { username } = await params;
+  // M-4: reuse the cached query instead of a separate uncached DB call
+  const creatorDb = await getCreatorCached(username);
   if (!creatorDb) return { title: 'Not found' } as Metadata;
 
   const creator: Partial<CreatorSummary> = {
@@ -64,10 +66,14 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 }
 
 export default async function CreatorProfilePage({ params }: PageProps) {
-  const { username } = params;
-  const creatorDb = await getCreatorCached(username);
+  const { username } = await params;
+  const [creatorDb, feePercent] = await Promise.all([
+    getCreatorCached(username),
+    getPlatformFeePercent(),
+  ]);
 
   if (!creatorDb) return notFound();
+
 
   const creator: CreatorSummary = {
     username: creatorDb.username,
@@ -176,12 +182,12 @@ export default async function CreatorProfilePage({ params }: PageProps) {
             </div>
           </section>
           <div className="lg:hidden">
-            <ChaiWidget creator={creator} />
+            <ChaiWidget creator={creator} feePercent={feePercent} />
           </div>
         </div>
 
         <div className="space-y-5 lg:sticky lg:top-6">
-          <ChaiWidget creator={creator} id="support" />
+          <ChaiWidget creator={creator} id="support" feePercent={feePercent} />
           <MembershipTiers creator={creator} />
           <section className="rounded-[2rem] border border-brand-200/70 bg-white/90 p-6 shadow-sm backdrop-blur dark:bg-card/80">
             <div className="flex items-center justify-between gap-4">

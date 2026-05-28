@@ -1,6 +1,7 @@
 import GoogleProvider from 'next-auth/providers/google';
 import EmailProvider from 'next-auth/providers/email';
 import { PrismaAdapter } from '@next-auth/prisma-adapter';
+import { getServerSession } from 'next-auth/next';
 import type { Session, User } from 'next-auth';
 import { prisma } from './prisma';
 
@@ -54,3 +55,15 @@ export const authOptions = {
     },
   },
 };
+
+/**
+ * Type-safe wrapper around next-auth v4 getServerSession.
+ *
+ * next-auth v4's session-callback signature is incompatible with TypeScript 5.9+
+ * strict-mode inference when passed `authOptions` directly. All call sites use
+ * this helper so the single `as any` cast lives in one place.
+ */
+export async function getSession(): Promise<Session | null> {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  return getServerSession(authOptions as any) as Promise<Session | null>;
+}

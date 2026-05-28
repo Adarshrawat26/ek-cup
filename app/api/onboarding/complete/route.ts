@@ -1,7 +1,6 @@
 import { NextResponse } from 'next/server';
-import { getServerSession } from 'next-auth/next';
 import { prisma } from '@/lib/prisma';
-import { authOptions } from '@/lib/auth';
+import { getSession } from '@/lib/auth';
 import { checkRateLimit, getClientIp, validateUsername, apiRes } from '@/lib/api-helpers';
 
 export async function POST(req: Request) {
@@ -13,7 +12,7 @@ export async function POST(req: Request) {
     const username = validateUsername(body?.username);
     if (!username) return apiRes.badRequest('Valid username is required.');
 
-    const session = await getServerSession(authOptions);
+    const session = await getSession();
     if (!session?.user?.id && process.env.NODE_ENV === 'production') {
       return apiRes.unauthorized();
     }

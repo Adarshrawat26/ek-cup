@@ -15,18 +15,20 @@ export default async function AdminOverview() {
   const monthStart = new Date(now.getFullYear(), now.getMonth(), 1);
   const lastMonthStart = new Date(now.getFullYear(), now.getMonth() - 1, 1);
 
+  // H-3: Use aggregate for revenue — avoids loading every paid transaction into memory.
+  // At 1 lakh transactions this would have been 100k rows in RAM on every page load.
   const [
     totalCreators,
     thisMonthCreators,
     lastMonthCreators,
     totalSupporters,
     thisMonthSupporters,
-    paidTxAll,
-    paidTxThisMonth,
-    paidTxLastMonth,
+    aggAll,
+    aggThisMonth,
+    aggLastMonth,
     recentCreators,
     feeConfig,
-    // Revenue by day for last 14 days (sparkline)
+    // 14-day sparkline: bounded query (max 14 days of records)
     last14DaysTx,
   ] = await Promise.all([
     prisma.creator.count(),
@@ -34,9 +36,9 @@ export default async function AdminOverview() {
     prisma.creator.count({ where: { createdAt: { gte: lastMonthStart, lt: monthStart } } }),
     prisma.support.count(),
     prisma.support.count({ where: { createdAt: { gte: monthStart } } }),
-    prisma.transaction.findMany({ where: { status: 'paid' }, select: { amount: true } }),
-    prisma.transaction.findMany({ where: { status: 'paid', createdAt: { gte: monthStart } }, select: { amount: true } }),
-    prisma.transaction.findMany({ where: { status: 'paid', createdAt: { gte: lastMonthStart, lt: monthStart } }, select: { amount: true } }),
+    prisma.transaction.aggregate({ where: { status: 'paid' }, _sum: { amount: true } }),
+    prisma.transaction.aggregate({ where: { status: 'paid', createdAt: { gte: monthStart } }, _sum: { amount: true } }),
+    prisma.transaction.aggregate({ where: { status: 'paid', createdAt: { gte: lastMonthStart, lt: monthStart } }, _sum: { amount: true } }),
     prisma.creator.findMany({
       orderBy: { createdAt: 'desc' },
       take: 5,
@@ -50,9 +52,9 @@ export default async function AdminOverview() {
     }),
   ]);
 
-  const grossAll = paidTxAll.reduce((s, t) => s + t.amount, 0);
-  const grossThisMonth = paidTxThisMonth.reduce((s, t) => s + t.amount, 0);
-  const grossLastMonth = paidTxLastMonth.reduce((s, t) => s + t.amount, 0);
+  const grossAll = aggAll._sum.amount ?? 0;
+  const grossThisMonth = aggThisMonth._sum.amount ?? 0;
+  const grossLastMonth = aggLastMonth._sum.amount ?? 0;
   const feePercent = parseInt(feeConfig?.value ?? '0', 10);
   const platformEarnings = Math.floor(grossAll * (feePercent / 100));
 

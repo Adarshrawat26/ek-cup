@@ -7,14 +7,15 @@ import { ArrowLeft, ArrowRight, ExternalLink } from 'lucide-react';
 
 const PAGE_SIZE = 20;
 
-type Props = { searchParams?: { q?: string; cursor?: string; dir?: 'next' | 'prev' } };
+type Props = { searchParams?: Promise<{ q?: string; cursor?: string; dir?: 'next' | 'prev' }> };
 
 export default async function AdminCreators({ searchParams }: Props) {
   const admin = await requireAdmin();
   if (!admin) redirect('/');
 
-  const q = searchParams?.q?.trim() ?? '';
-  const cursor = searchParams?.cursor;
+  const sp = await searchParams;
+  const q = sp?.q?.trim() ?? '';
+  const cursor = sp?.cursor;
 
   const where = q
     ? {

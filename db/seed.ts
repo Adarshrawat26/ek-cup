@@ -10,8 +10,7 @@ async function main() {
       username: 'ritika',
       name: 'Ritika Sharma',
       bio: "Illustrator from Jaipur. I make art that celebrates India's stories and colours.",
-      tags: 'Illustration,Jaipur,Hindi & English',
-      handle: 'ekcup.in/ritika'
+      tags: 'Illustration,Jaipur,Hindi & English'
     }
   });
 
