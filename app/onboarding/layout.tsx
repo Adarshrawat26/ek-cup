@@ -1,11 +1,23 @@
 import React from 'react';
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import OnboardingProvider from '@/lib/onboarding-context';
 import { StepIndicator } from '@/components/onboarding/step-indicator';
+import { SignOutButton } from '@/components/auth/sign-out-button';
+import { getSession } from '@/lib/auth';
 
 export const metadata = { title: 'Get started — Ek Cup' };
 
-export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
+export default async function OnboardingLayout({ children }: { children: React.ReactNode }) {
+  // Auth gate: in production, redirect unauthenticated users to home
+  // In development, allow unauthenticated access for testing
+  if (process.env.NODE_ENV === 'production') {
+    const session = await getSession();
+    if (!session?.user?.id) {
+      redirect('/');
+    }
+  }
+
   return (
     <OnboardingProvider>
       <div className="min-h-screen bg-gradient-to-br from-brand-50 via-white to-amber-50/40">
@@ -22,9 +34,7 @@ export default function OnboardingLayout({ children }: { children: React.ReactNo
                 <div className="text-xs text-muted-foreground">एक कप</div>
               </div>
             </Link>
-            <a href="/api/auth/signout" className="text-xs text-muted-foreground transition hover:text-foreground">
-              Sign out
-            </a>
+            <SignOutButton size="sm" />
           </div>
         </header>
 

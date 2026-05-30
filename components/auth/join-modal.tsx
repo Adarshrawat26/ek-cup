@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { signIn } from 'next-auth/react';
-import { X } from 'lucide-react';
+import { X, AlertCircle } from 'lucide-react';
 
 type Props = { open: boolean; onClose: () => void };
 
@@ -12,19 +12,26 @@ export default function JoinModal({ open, onClose }: Props) {
   const [email, setEmail] = useState('');
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState<'google' | 'email' | null>(null);
+  const [error, setError] = useState('');
 
   useEffect(() => {
     if (!open) return;
     setSent(false);
     setEmail('');
     setLoading(null);
+    setError('');
     fetch('/api/auth/providers')
       .then((r) => r.json())
       .then((p) => {
         setHasGoogle(Boolean(p?.google));
         setHasEmail(Boolean(p?.email));
+        if (!p?.google && !p?.email) {
+          setError('Authentication is not configured. Please try again later.');
+        }
       })
-      .catch(() => {});
+      .catch(() => {
+        setError('Failed to load authentication. Please check your connection.');
+      });
   }, [open]);
 
   // Close on Escape key
@@ -37,10 +44,10 @@ export default function JoinModal({ open, onClose }: Props) {
 
   async function handleGoogle() {
     if (!hasGoogle) {
-      onClose();
-      window.location.href = '/onboarding/profile';
+      setError('Google authentication is not available right now.');
       return;
     }
+    setError('');
     setLoading('google');
     await signIn('google', { callbackUrl: '/dashboard' });
   }
@@ -49,10 +56,10 @@ export default function JoinModal({ open, onClose }: Props) {
     e.preventDefault();
     if (!email.trim()) return;
     if (!hasEmail) {
-      onClose();
-      window.location.href = '/onboarding/profile';
+      setError('Email authentication is not available right now.');
       return;
     }
+    setError('');
     setLoading('email');
     await signIn('email', { email, callbackUrl: '/dashboard', redirect: false });
     setSent(true);
@@ -97,10 +104,22 @@ export default function JoinModal({ open, onClose }: Props) {
             </p>
           </div>
 
+          {error && (
+            <div className="mb-4 flex gap-3 rounded-2xl border border-red-200 bg-red-50 p-4">
+              <AlertCircle className="h-5 w-5 shrink-0 text-red-600" />
+              <p className="text-sm text-red-700">{error}</p>
+            </div>
+          )}
+
           {sent ? (
             <div className="rounded-2xl border border-brand-200 bg-brand-50 p-5 text-center">
               <p className="text-sm font-medium text-brand-800">✉️ Magic link sent!</p>
               <p className="mt-1 text-sm text-muted-foreground">Check your inbox and click the link to sign in.</p>
+            </div>
+          ) : !hasGoogle && !hasEmail ? (
+            <div className="rounded-2xl border border-yellow-200 bg-yellow-50 p-5 text-center">
+              <p className="text-sm font-medium text-yellow-800">⚠️ Authentication Unavailable</p>
+              <p className="mt-2 text-sm text-yellow-700">Authentication methods are not configured. Please try again later or contact support.</p>
             </div>
           ) : (
             <div className="space-y-3">

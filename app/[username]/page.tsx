@@ -90,14 +90,14 @@ export default async function CreatorProfilePage({ params }: PageProps) {
       youtube: creatorDb.youtubeUrl ?? undefined,
       twitter: creatorDb.twitterUrl ?? undefined
     },
-    supporterFeed: creatorDb.supports.map((s) => ({ id: s.id, name: s.supporterName ?? 'A friend', message: s.message ?? '', time: s.createdAt.toISOString(), avatarInitials: (s.supporterName ?? 'A').charAt(0) })),
+    supporterFeed: creatorDb.supports.map((s) => ({ id: s.id, name: s.supporterName ?? 'A friend', message: s.message ?? '', time: new Date(s.createdAt).toISOString(), avatarInitials: (s.supporterName ?? 'A').charAt(0) })),
       memberships: creatorDb.memberships.map((m) => ({ name: m.name, price: `₹${(m.priceInPaise ?? 0) / 100}/mo`, perks: parsePerks(m.perks) })),
       posts: creatorDb.posts.map((post) => ({
         id: post.id,
         title: post.title,
         body: post.body,
         audience: post.audience,
-        createdAt: post.createdAt.toISOString()
+        createdAt: new Date(post.createdAt).toISOString()
       })),
       shopItems: creatorDb.shopItems.map((item) => ({
         id: item.id,
@@ -131,14 +131,10 @@ export default async function CreatorProfilePage({ params }: PageProps) {
             </div>
           </div>
 
-          <div className="grid grid-cols-3 gap-3 sm:min-w-[22rem]">
+          <div className="grid grid-cols-2 gap-3 sm:min-w-[16rem]">
             <div className="rounded-2xl border border-brand-200/70 bg-brand-50/80 p-4 text-center">
               <div className="text-2xl font-semibold text-brand-800">{supportTotal}</div>
               <div className="text-xs uppercase tracking-[0.2em] text-brand-700/80">Supporters</div>
-            </div>
-            <div className="rounded-2xl border border-brand-200/70 bg-white p-4 text-center shadow-[0_10px_30px_-24px_rgba(193,123,60,0.6)]">
-              <div className="text-2xl font-semibold text-brand-800">₹{earnedTotal.toFixed(0)}</div>
-              <div className="text-xs uppercase tracking-[0.2em] text-brand-700/80">Earned</div>
             </div>
             <div className="rounded-2xl border border-brand-200/70 bg-brand-50/80 p-4 text-center">
               <div className="text-2xl font-semibold text-brand-800">{recentSupporters}</div>

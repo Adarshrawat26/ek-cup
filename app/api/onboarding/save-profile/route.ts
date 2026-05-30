@@ -55,11 +55,32 @@ export async function POST(req: Request) {
       twitterUrl: socialLink ? validateUrl(socialLink) : null,
     };
 
-    const creator = await prisma.creator.upsert({
-      where: { username: validUsername },
-      update: { ...profileData, updatedAt: new Date() },
-      create: { ...profileData, userId: effectiveUserId },
-    });
+    // INTEGRITY: Upsert by userId when the user is authenticated so that a
+    // returning user who picks a new username updates their existing creator
+    // record instead of accidentally creating a duplicate.  In dev/demo mode
+    // (no session) fall back to upsert-by-username for local testing.
+    let creator;
+    if (effectiveUserId) {
+      // Check if a creator with this userId already exists
+      const existing = await prisma.creator.findUnique({ where: { userId: effectiveUserId } });
+      if (existing) {
+        creator = await prisma.creator.update({
+          where: { userId: effectiveUserId },
+          data: { ...profileData, updatedAt: new Date() },
+        });
+      } else {
+        creator = await prisma.creator.create({
+          data: { ...profileData, userId: effectiveUserId },
+        });
+      }
+    } else {
+      // Dev/demo fallback: upsert by username
+      creator = await prisma.creator.upsert({
+        where: { username: validUsername },
+        update: { ...profileData, updatedAt: new Date() },
+        create: { ...profileData, userId: effectiveUserId },
+      });
+    }
 
     return NextResponse.json({ success: true, creatorId: creator.id });
   } catch (err) {

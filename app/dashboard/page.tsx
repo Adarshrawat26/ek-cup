@@ -1,11 +1,12 @@
 import Link from 'next/link';
 import { notFound, redirect } from 'next/navigation';
-import { ArrowUpRight, Banknote, Heart, MessageSquareText, Sparkles } from 'lucide-react';
+import { ArrowUpRight, Banknote, Heart, MessageSquareText, Settings, Sparkles } from 'lucide-react';
 import { getSession } from '@/lib/auth';
 import { prisma } from '@/lib/prisma';
 import { formatRupees } from '@/lib/utils';
 import { getPlatformFeePercent } from '@/lib/platform-config';
 import { Button } from '@/components/ui/button';
+import { SignOutButton } from '@/components/auth/sign-out-button';
 import { MembershipForm } from '@/components/dashboard/membership-form';
 import { PostForm } from '@/components/dashboard/post-form';
 import { ShopItemForm } from '@/components/dashboard/shop-item-form';
@@ -94,12 +95,15 @@ export default async function DashboardPage({ searchParams }: DashboardProps) {
               </Link>
             </Button>
             <Button variant="outline" className="rounded-full" asChild>
+              <Link href="/dashboard/settings">
+                <Settings className="mr-1.5 h-4 w-4" />Settings
+              </Link>
+            </Button>
+            <Button variant="outline" className="rounded-full" asChild>
               <Link href="/">Home</Link>
             </Button>
             {session ? (
-              <Button variant="outline" className="rounded-full" asChild>
-                <Link href="/api/auth/signout">Sign out</Link>
-              </Button>
+              <SignOutButton variant="outline" className="rounded-full" />
             ) : null}
           </div>
         </div>

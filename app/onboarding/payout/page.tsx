@@ -3,6 +3,9 @@
 import React, { useState } from 'react';
 import { useOnboarding } from '@/lib/onboarding-context';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Card } from '@/components/ui/card';
 
 export default function PayoutStep() {
   const { data, setData } = useOnboarding();
@@ -13,24 +16,18 @@ export default function PayoutStep() {
   const [ifsc, setIfsc] = useState('');
   const [bankName, setBankName] = useState('');
   const [error, setError] = useState('');
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   async function onNext() {
     setError('');
+    setLoading(true);
 
-    let creatorId: string | undefined;
-    try {
-      const res = await fetch(`/api/creators/${data.username}`);
-      if (res.ok) {
-        const c = await res.json();
-        creatorId = c.id;
-      }
-    } catch {
-      // ignore network errors — will be caught below
-    }
-
+    // Use creatorId from context (stored during profile step)
+    const creatorId = data.creatorId;
     if (!creatorId) {
-      setError('Could not find your creator profile. Try going back and saving your profile again.');
+      setError('Creator profile not found. Please go back and save your profile again.');
+      setLoading(false);
       return;
     }
 
@@ -40,14 +37,26 @@ export default function PayoutStep() {
       ...(bankOpen ? { accountHolder, accountNumber, ifsc, bankName } : {})
     };
 
-    await fetch('/api/onboarding/save-payout', {
-      method: 'POST',
-      headers: { 'content-type': 'application/json' },
-      body: JSON.stringify(payload)
-    });
+    try {
+      const res = await fetch('/api/onboarding/save-payout', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify(payload)
+      });
 
-    setData({ payout: payload });
-    router.push('/onboarding/done');
+      if (!res.ok) {
+        const json = await res.json();
+        setError(json.error || 'Failed to save payout method. Please try again.');
+        setLoading(false);
+        return;
+      }
+
+      setData({ payout: payload });
+      router.push('/onboarding/done');
+    } catch (err) {
+      setError('An error occurred. Please try again.');
+      setLoading(false);
+    }
   }
 
   function onSkip() {
@@ -55,55 +64,85 @@ export default function PayoutStep() {
   }
 
   return (
-    <div className="max-w-xl mx-auto p-6">
-      <div className="bg-white p-4 rounded-md border border-gray-100">
-        <h2 className="text-lg font-semibold mb-2 text-slate-800">Set up your payout method</h2>
-        <p className="text-sm text-slate-500 mb-4">Payments will be sent directly to this UPI ID</p>
+    <div className="mx-auto max-w-xl px-4 py-6 sm:px-6">
+      <Card className="p-6">
+        <div className="mb-6">
+          <h1 className="text-2xl font-semibold">Set up payouts</h1>
+          <p className="mt-1 text-sm text-muted-foreground">Payments will be sent directly to this account</p>
+        </div>
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           <div>
-            <label className="text-sm block mb-1 text-slate-700">Your UPI ID</label>
-            <input
+            <label className="text-sm font-medium">Your UPI ID</label>
+            <Input
               value={upiId}
               onChange={(e) => setUpiId(e.target.value)}
               placeholder="yourname@upi"
-              className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm"
+              type="text"
             />
           </div>
 
-          <div className="rounded-md border border-gray-100 p-2">
-            <label className="flex items-center gap-2 text-sm">
-              <input type="checkbox" checked={bankOpen} onChange={(e) => setBankOpen(e.target.checked)} />
+          <div className="rounded-lg border p-4">
+            <label className="flex items-center gap-2 text-sm font-medium">
+              <input
+                type="checkbox"
+                checked={bankOpen}
+                onChange={(e) => setBankOpen(e.target.checked)}
+                className="h-4 w-4 rounded border-input"
+              />
               Use bank account instead
             </label>
             {bankOpen && (
-              <div className="mt-2 space-y-2">
-                <input value={accountHolder} onChange={(e) => setAccountHolder(e.target.value)} placeholder="Account holder name" className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" />
-                <input value={accountNumber} onChange={(e) => setAccountNumber(e.target.value)} placeholder="Account number" className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" />
-                <input value={ifsc} onChange={(e) => setIfsc(e.target.value)} placeholder="IFSC code" className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" />
-                <input value={bankName} onChange={(e) => setBankName(e.target.value)} placeholder="Bank name" className="w-full rounded-md border border-gray-200 px-3 py-2 text-sm" />
+              <div className="mt-4 space-y-3">
+                <Input
+                  value={accountHolder}
+                  onChange={(e) => setAccountHolder(e.target.value)}
+                  placeholder="Account holder name"
+                />
+                <Input
+                  value={accountNumber}
+                  onChange={(e) => setAccountNumber(e.target.value)}
+                  placeholder="Account number"
+                />
+                <Input
+                  value={ifsc}
+                  onChange={(e) => setIfsc(e.target.value)}
+                  placeholder="IFSC code"
+                />
+                <Input
+                  value={bankName}
+                  onChange={(e) => setBankName(e.target.value)}
+                  placeholder="Bank name"
+                />
               </div>
             )}
           </div>
 
-          {error ? <p className="text-sm text-red-600">{error}</p> : null}
-
-          <div className="p-3 bg-gray-50 border border-gray-100 rounded-md text-sm text-slate-700">
-            <div className="font-medium">Takes less than 2 mins</div>
-            <div className="text-sm text-slate-500">Enter your UPI ID or bank details so we can send you payments directly.</div>
+          <div className="rounded-lg bg-secondary p-4 text-sm">
+            <div className="font-medium">Takes less than 2 minutes</div>
+            <p className="mt-1 text-muted-foreground">Enter your UPI ID or bank details so we can send you payments directly.</p>
           </div>
+
+          {error && <div className="rounded-md bg-red-50 p-3 text-sm text-red-700">{error}</div>}
         </div>
 
-        <div className="mt-6 flex items-center justify-end">
-          <button onClick={onSkip} className="text-sm text-slate-500 underline cursor-pointer mr-4">Skip this step</button>
-          <div className="flex-1 mr-4">
-            <div className="h-1 bg-gray-100 rounded-full">
-              <div className="h-1 bg-brand-500 rounded-full" style={{ width: '50%' }} />
-            </div>
+        <div className="mt-8 flex justify-between gap-3">
+          <Button
+            variant="ghost"
+            onClick={() => router.push('/onboarding/profile')}
+          >
+            ← Back
+          </Button>
+          <div className="flex gap-3">
+            <Button variant="ghost" onClick={onSkip}>
+              Skip for now
+            </Button>
+            <Button onClick={onNext} disabled={loading}>
+              {loading ? 'Saving...' : 'Continue'}
+            </Button>
           </div>
-          <button onClick={onNext} className="ml-4 px-4 py-2 rounded-md text-white bg-brand-500 text-sm">Next</button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

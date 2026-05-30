@@ -16,7 +16,9 @@ export function StartPageCta() {
         className="rounded-full bg-brand-500 px-6 text-base text-white hover:bg-brand-600"
         onClick={(e) => {
           e.preventDefault();
-          if (session) window.location.href = '/onboarding/profile';
+          // Signed-in users go to /dashboard — it redirects to onboarding if they
+          // haven't set up a page yet, or shows their dashboard if they have.
+          if (session) window.location.href = '/dashboard';
           else setModalOpen(true);
         }}
       >

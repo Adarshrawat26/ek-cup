@@ -1,12 +1,15 @@
 "use client";
 
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useOnboarding } from '@/lib/onboarding-context';
 import { useRouter } from 'next/navigation';
+import { Button } from '@/components/ui/button';
+import { Card } from '@/components/ui/card';
 
 export default function DoneStep() {
   const { data, clear } = useOnboarding();
   const [copied, setCopied] = useState(false);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const url = data.username
@@ -14,15 +17,23 @@ export default function DoneStep() {
     : '';
 
   async function finish() {
-    if (data.username) {
-      await fetch('/api/onboarding/complete', {
-        method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ username: data.username })
-      });
+    setLoading(true);
+
+    // Mark onboarding as complete
+    if (data.creatorId) {
+      try {
+        await fetch('/api/onboarding/complete', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ creatorId: data.creatorId })
+        });
+      } catch {
+        // continue regardless of error
+      }
     }
+
     clear();
-    router.push(data.username ? `/dashboard?username=${encodeURIComponent(data.username)}` : '/dashboard');
+    router.push('/dashboard');
   }
 
   function copy() {
@@ -33,41 +44,50 @@ export default function DoneStep() {
   }
 
   return (
-    <div className="max-w-xl mx-auto p-6 text-center">
-      <div className="bg-white p-6 rounded-lg shadow-sm">
+    <div className="mx-auto max-w-xl px-4 py-6 sm:px-6">
+      <Card className="p-6 text-center">
         <div className="text-6xl">☕</div>
-        <h2 className="text-2xl font-semibold mt-4">Your Ek Cup page is live!</h2>
-        <p className="mt-2 text-slate-600">{url}</p>
-        <div className="mt-4 flex justify-center gap-2">
-          <button onClick={copy} className="px-3 py-1 rounded-md border">
-            {copied ? 'Copied!' : 'Copy'}
-          </button>
-          <a href={url} target="_blank" rel="noreferrer" className="px-3 py-1 rounded-md border">Visit</a>
+        <h1 className="mt-4 text-2xl font-semibold">Your Ek Cup page is live!</h1>
+        <p className="mt-2 break-all text-sm text-muted-foreground font-mono">{url}</p>
+
+        <div className="mt-6 flex flex-col gap-3 sm:flex-row sm:justify-center">
+          <Button variant="outline" onClick={copy}>
+            {copied ? 'Copied!' : 'Copy link'}
+          </Button>
+          <Button asChild>
+            <a href={url} target="_blank" rel="noreferrer">
+              Visit page
+            </a>
+          </Button>
         </div>
 
-        <div className="mt-4">
-          <div className="text-sm text-slate-600">Share your page</div>
-          <div className="flex justify-center gap-2 mt-2">
-            <a
-              href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just set up my Ek Cup page! Support my work here ☕ ${url} #EkCup #CreatorEconomy`)}`}
-              target="_blank"
-              rel="noreferrer"
-              className="px-3 py-1 border rounded-md"
-            >
-              Twitter
-            </a>
-            <button onClick={copy} className="px-3 py-1 border rounded-md">
+        <div className="mt-8 border-t pt-8">
+          <p className="text-sm font-medium">Share your page</p>
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:justify-center">
+            <Button variant="outline" asChild>
+              <a
+                href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(`I just set up my Ek Cup page! Support my work here ☕ ${url} #EkCup #CreatorEconomy`)}`}
+                target="_blank"
+                rel="noreferrer"
+              >
+                Share on Twitter
+              </a>
+            </Button>
+            <Button variant="outline" onClick={copy}>
               {copied ? 'Copied!' : 'Copy link'}
-            </button>
+            </Button>
           </div>
         </div>
 
-        <div className="mt-6">
-          <button onClick={finish} className="px-6 py-2 rounded-full text-white bg-brand-500">
-            Go to my dashboard
-          </button>
+        <div className="mt-8 flex justify-center gap-3">
+          <Button variant="outline" onClick={() => router.push('/')}>
+            ← Back to home
+          </Button>
+          <Button onClick={finish} size="lg" disabled={loading}>
+            {loading ? 'Redirecting...' : 'Go to dashboard'}
+          </Button>
         </div>
-      </div>
+      </Card>
     </div>
   );
 }

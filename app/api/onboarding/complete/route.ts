@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { getSession } from '@/lib/auth';
-import { checkRateLimit, getClientIp, validateUsername, apiRes } from '@/lib/api-helpers';
+import { checkRateLimit, getClientIp, apiRes } from '@/lib/api-helpers';
 
 export async function POST(req: Request) {
   const ip = getClientIp(req);
@@ -9,22 +9,22 @@ export async function POST(req: Request) {
 
   try {
     const body = await req.json();
-    const username = validateUsername(body?.username);
-    if (!username) return apiRes.badRequest('Valid username is required.');
+    const creatorId = body?.creatorId;
+    if (!creatorId) return apiRes.badRequest('creatorId is required.');
 
     const session = await getSession();
     if (!session?.user?.id && process.env.NODE_ENV === 'production') {
       return apiRes.unauthorized();
     }
 
-    // If authenticated, verify this username belongs to the session user
+    // If authenticated, verify this creatorId belongs to the session user
     if (session?.user?.id) {
-      const creator = await prisma.creator.findUnique({ where: { username } });
+      const creator = await prisma.creator.findUnique({ where: { id: creatorId } });
       if (!creator) return apiRes.notFound('Creator not found.');
       if (creator.userId && creator.userId !== session.user.id) return apiRes.forbidden();
     }
 
-    await prisma.creator.update({ where: { username }, data: { onboardingComplete: true } });
+    await prisma.creator.update({ where: { id: creatorId }, data: { onboardingComplete: true } });
     return NextResponse.json({ success: true });
   } catch (err) {
     console.error('[onboarding-complete]', err);

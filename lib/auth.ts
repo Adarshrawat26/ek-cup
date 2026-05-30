@@ -14,6 +14,13 @@ if (process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET) {
     GoogleProvider({
       clientId: process.env.GOOGLE_CLIENT_ID,
       clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+      authorization: {
+        params: {
+          // Always show the Google account picker so the user can choose
+          // which account to sign in with (even if already signed in).
+          prompt: 'select_account',
+        },
+      },
     })
   );
 }
@@ -31,7 +38,8 @@ export const authOptions = {
   adapter: PrismaAdapter(prisma),
   session: { strategy: 'database' as const },
   providers,
-  pages: { signIn: '/' },
+  debug: process.env.NODE_ENV !== 'production',
+  pages: { signIn: '/signin', error: '/auth-error' },
   callbacks: {
     /**
      * Attach user.id to the session so all client/server code can read it

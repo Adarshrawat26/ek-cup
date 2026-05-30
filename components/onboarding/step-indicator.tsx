@@ -4,7 +4,8 @@ import { usePathname } from 'next/navigation';
 
 const STEPS = [
   { n: 1, label: 'Profile', path: '/onboarding/profile' },
-  { n: 2, label: 'Done',    path: '/onboarding/done' },
+  { n: 2, label: 'Payout',  path: '/onboarding/payout' },
+  { n: 3, label: 'Done',    path: '/onboarding/done' },
 ];
 
 export function StepIndicator() {

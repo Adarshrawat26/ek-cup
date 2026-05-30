@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { Menu, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { SignOutButton } from '@/components/auth/sign-out-button';
 import { ThemeToggle } from '@/components/theme-toggle';
 import { cn } from '@/lib/utils';
 import JoinModal from '@/components/auth/join-modal';
@@ -52,23 +53,22 @@ export function LandingNavbar() {
           <div className="hidden items-center gap-2 md:flex">
             <ThemeToggle />
             {session ? (
-              <Button className="rounded-full bg-brand-500 px-5 text-white hover:bg-brand-600" asChild>
-                <Link href="/dashboard">Dashboard</Link>
-              </Button>
+              <>
+                <Button className="rounded-full bg-brand-500 px-5 text-white hover:bg-brand-600" asChild>
+                  <Link href="/dashboard">Dashboard</Link>
+                </Button>
+                <SignOutButton variant="outline" className="rounded-full" />
+              </>
             ) : (
               <>
-                <Button
-                  variant="ghost"
-                  className="rounded-full px-4"
-                  onClick={() => setModalOpen(true)}
-                >
-                  Sign in
+                <Button variant="ghost" className="rounded-full px-4" asChild>
+                  <Link href="/signin">Sign in</Link>
                 </Button>
                 <Button
                   className="rounded-full bg-brand-500 px-5 text-white hover:bg-brand-600"
-                  asChild
+                  onClick={() => setModalOpen(true)}
                 >
-                  <Link href="/onboarding/profile">Start my page</Link>
+                  Start my page
                 </Button>
               </>
             )}
@@ -103,23 +103,29 @@ export function LandingNavbar() {
             ))}
             <hr className="border-border/60" />
             {session ? (
-              <Button className="justify-start rounded-2xl bg-brand-500 px-3 text-white hover:bg-brand-600" asChild>
-                <Link href="/dashboard">Dashboard</Link>
-              </Button>
+              <>
+                <Button className="justify-start rounded-2xl bg-brand-500 px-3 text-white hover:bg-brand-600" asChild>
+                  <Link href="/dashboard">Dashboard</Link>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="justify-start rounded-2xl px-3"
+                  onClick={() => setMenuOpen(false)}
+                  asChild
+                >
+                  <SignOutButton />
+                </Button>
+              </>
             ) : (
               <>
-                <Button
-                  variant="ghost"
-                  className="justify-start rounded-2xl px-3"
-                  onClick={() => { setMenuOpen(false); setModalOpen(true); }}
-                >
-                  Sign in
+                <Button variant="ghost" className="justify-start rounded-2xl px-3" asChild>
+                  <Link href="/signin" onClick={() => setMenuOpen(false)}>Sign in</Link>
                 </Button>
                 <Button
                   className="justify-start rounded-2xl bg-brand-500 px-3 text-white hover:bg-brand-600"
-                  asChild
+                  onClick={() => { setMenuOpen(false); setModalOpen(true); }}
                 >
-                  <Link href="/onboarding/profile">Start my page</Link>
+                  Start my page
                 </Button>
               </>
             )}

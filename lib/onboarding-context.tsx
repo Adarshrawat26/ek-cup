@@ -10,6 +10,7 @@ type ProfileState = {
   avatarUrl?: string;
   tags?: string[];
   socialLink?: string;
+  creatorId?: string;
   payout?: PayoutData;
 };
 
