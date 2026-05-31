@@ -40,6 +40,18 @@ export const authOptions = {
   providers,
   debug: process.env.NODE_ENV !== 'production',
   pages: { signIn: '/signin', error: '/auth-error' },
+  // Fix "State cookie was missing" in local dev — http:// doesn't support
+  // Secure cookies so we have to explicitly allow them over plain HTTP.
+  cookies: process.env.NODE_ENV !== 'production' ? {
+    pkceCodeVerifier: {
+      name: 'next-auth.pkce.code_verifier',
+      options: { httpOnly: true, sameSite: 'lax', path: '/', secure: false },
+    },
+    state: {
+      name: 'next-auth.state',
+      options: { httpOnly: true, sameSite: 'lax', path: '/', secure: false },
+    },
+  } : undefined,
   callbacks: {
     /**
      * Attach user.id to the session so all client/server code can read it
