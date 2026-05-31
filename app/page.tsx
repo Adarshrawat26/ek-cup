@@ -5,6 +5,7 @@ import { HowItWorks } from '@/components/landing/how-it-works';
 import { LandingNavbar } from '@/components/landing/navbar';
 import { Pricing } from '@/components/landing/pricing';
 import { SocialProof } from '@/components/landing/social-proof';
+import { StickyMobileCta } from '@/components/landing/sticky-mobile-cta';
 
 export default function HomePage() {
   return (
@@ -16,6 +17,7 @@ export default function HomePage() {
       <SocialProof />
       <Pricing />
       <Footer />
+      <StickyMobileCta />
     </main>
   );
 }
